@@ -1,3 +1,4 @@
+import os
 import enum
 import pathlib
 from typing import Optional
@@ -9,9 +10,12 @@ from benedict import benedict
 from . import Plugin, Config
 
 
-cli = typer.Typer()
+ENV = os.environ.get("ENV", "development")
+STAGE = os.environ.get("STAGE", pathlib.Path.cwd().name)
 
-config = Config("development", pathlib.Path.cwd().name)
+config = Config(ENV, STAGE)
+
+cli = typer.Typer()
 
 
 class ConfigTypes(str, enum.Enum):

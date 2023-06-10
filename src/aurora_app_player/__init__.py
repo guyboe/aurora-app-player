@@ -25,7 +25,12 @@ class Plugin(Queues):
     def play(self, filename: str):
         command = self.config.player_command.format(filename)
         # pylint: disable=consider-using-with
-        process = subprocess.Popen(command.split(" "), start_new_session=True, text=True)
+        process = subprocess.Popen(
+            command.split(" "),
+            stdin=subprocess.PIPE,
+            start_new_session=True,
+            text=True
+        )
         self.processes[process.pid] = process
         atexit.register(self.terminate, process.pid)
         logging.info("Process %d [%s] has been started", process.pid, command)
@@ -59,12 +64,17 @@ class Plugin(Queues):
         with suppress(pydantic.ValidationError):
             execute = Execute.parse_obj(body)
             logging.info("Got command %s for execute", execute)
-            for pid in [k for k in self.processes if k == execute.value or not execute.value]:
+            processes = [k for k in self.processes if k == execute.value or not execute.value]
+            for pid in processes:
                 self.terminate(pid)
+            if not processes:
+                logging.debug("Doesn't have proceesses to terminate")
 
         message.ack()
 
     def terminate(self, pid):
+        if pid not in self.processes:
+            return
         self.processes[pid].terminate()
         logging.debug(
             "Process %d has been terminated with status %d", pid, self.processes[pid].wait()

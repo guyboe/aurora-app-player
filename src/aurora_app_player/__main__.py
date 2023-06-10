@@ -83,5 +83,18 @@ def _play(
     plugin.play(url)
 
 
+@cli.command("stop")
+def _stop(pid: int = typer.Option(None, help="process id to stop")):
+    plugin = Plugin(config)
+    execute = {
+        "name": "play",
+        "action": "stop",
+    }
+    if pid:
+        execute["value"] = pid
+    print(execute, config.Queues.Exchange.Name.EXECUTE.value)
+    plugin.publish(execute, exchange=config.Queues.Exchange.Name.EXECUTE.value)
+
+
 if __name__ == "__main__":
     cli()

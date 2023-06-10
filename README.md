@@ -1,28 +1,11 @@
 # Install with dependencies
 
 ```bash
-pip install --extra-index-url https://test.pypi.org/simple/ -e .
+pip install -e .
+pip install --extra-index-url https://test.pypi.org/simple/ pydantic-another-config
 ```
 
-# Create config (example)
-
-```yaml
-queues:
-  url: amqp://guest:guest@localhost
-  exchanges:
-    play:
-      name: aurora.play
-      type: fanout
-      proxy: proxy/aurora.play
-    execute:
-      name: aurora.execute
-      type: fanout
-      proxy: proxy/aurora.execute
-  queues:
-    - name: aurora.play
-      exchange: play
-      callback: _play
-```
+# Copy `default.yaml.example` to config directory
 
 # Validate config
 

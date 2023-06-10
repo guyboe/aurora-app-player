@@ -1,0 +1,24 @@
+queues:
+  exchanges:
+    say:
+      name: aurora.say
+      type: fanout
+      proxy: proxy/aurora.say
+    play:
+      name: aurora.play
+      type: fanout
+      proxy: proxy/aurora.play
+    execute:
+      name: aurora.execute
+      type: fanout
+      proxy: proxy/aurora.execute
+  queues:
+    - name: aurora.say
+      exchange: say
+      callback: _play
+    - name: aurora.play
+      exchange: play
+      callback: _play
+
+player_command: mplayer {}
+source: player

@@ -1,6 +1,7 @@
+import pickle
 import hashlib
 import logging
-from typing import Dict, Any
+from typing import Dict, Union, Any
 
 from kombu import Connection, Exchange, Queue, Consumer, Producer
 from kombu.utils.compat import nested
@@ -82,19 +83,24 @@ class Queues:
 
     def publish(
         self,
-        body: bytes,
+        body: Union[bytes, str],
         *,
         exchange: str,
         routing_key: str = "*",
         source: str = None,
         expiration: int = 0,
     ) -> Dict[str, Any]:
+        content_type = "application/data"
+        if not isinstance(body, bytes):
+            body = pickle.dumps(body)
+            content_type = "application/x-python-serialize"
         hash_ = hashlib.sha256(body).hexdigest()
         self._producer.publish(
             body,
             exchange=self._proxies[exchange],
             routing_key=routing_key,
             headers={ "v-source": source, "v-hash": hash_ },
+            content_type=content_type,
             expiration=expiration,
         )
         return { "hash": hash_ }

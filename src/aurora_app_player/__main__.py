@@ -4,6 +4,7 @@ import pathlib
 from typing import Optional
 
 import typer
+from pydantic import BaseModel, AnyUrl
 
 from benedict import benedict
 
@@ -22,6 +23,11 @@ class ConfigTypes(str, enum.Enum):
     yaml = "yaml"
     json = "json"
     ini = "ini"
+
+
+class PlayTypes(str, enum.Enum):
+    url = "url"
+    path = "path"
 
 
 @cli.command("config")
@@ -55,20 +61,30 @@ def _consume():
     plugin.consume()
 
 
+class UrlContainer(BaseModel):
+    url: AnyUrl
+
+
 @cli.command("play")
 def _play(
-    filename: pathlib.Path,
-    queue: config.Queues.Exchange.Name = typer.Option(None, help="play via queue")
+    path: str, queue: config.Queues.Exchange.Name = typer.Option(None, help="play via queue")
 ):
-    if not filename.exists():
-        typer.echo(f"File {filename} not found")
-        raise typer.Abort()
     plugin = Plugin(config)
     if queue:
-        with open(filename, mode="r+b") as f:
-            plugin.publish(f.read(), exchange=queue.value)
+        try:
+            path = UrlContainer(url=path).url
+        except Exception as e:
+            path = pathlib.Path(path)
+            if not path.exists():
+                typer.echo(f"File {path} not found")
+                raise typer.Abort() from e
+        if isinstance(path, pathlib.Path):
+            with open(path, mode="r+b") as f:
+                plugin.publish(f.read(), exchange=queue.value)
+        else:
+            plugin.publish(path, exchange=queue.value)
         return
-    plugin.play(filename)
+    plugin.play(path)
 
 
 if __name__ == "__main__":

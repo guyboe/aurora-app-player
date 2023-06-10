@@ -86,13 +86,12 @@ def _play(
 @cli.command("stop")
 def _stop(pid: int = typer.Option(None, help="process id to stop")):
     plugin = Plugin(config)
-    execute = {
-        "name": "play",
-        "action": "stop",
-    }
+    execute = { "name": "play", "action": "stop" }
     if pid:
+        print(f"Trying to stop {plugin.NAME} process with pid {pid} via queue")
         execute["value"] = pid
-    print(execute, config.Queues.Exchange.Name.EXECUTE.value)
+    else:
+        print(f"Trying to stop all {plugin.NAME} processes via queue")
     plugin.publish(execute, exchange=config.Queues.Exchange.Name.EXECUTE.value)
 
 

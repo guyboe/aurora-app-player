@@ -1,10 +1,10 @@
 import os
 import enum
 import pathlib
-from typing import Optional
+from typing import Optional, Union
 
 import typer
-from pydantic import BaseModel, AnyUrl
+import pydantic
 
 from benedict import benedict
 
@@ -61,8 +61,8 @@ def _consume():
     plugin.consume()
 
 
-class UrlContainer(BaseModel):
-    url: AnyUrl
+class UrlContainer(pydantic.BaseModel):
+    url: Union[pydantic.FilePath, pydantic.AnyUrl]
 
 
 @cli.command("play")
@@ -71,20 +71,16 @@ def _play(
 ):
     plugin = Plugin(config)
     if queue:
-        try:
-            path = UrlContainer(url=path).url
-        except Exception as e:
-            path = pathlib.Path(path)
-            if not path.exists():
-                typer.echo(f"File {path} not found")
-                raise typer.Abort() from e
-        if isinstance(path, pathlib.Path):
-            with open(path, mode="r+b") as f:
+        url = UrlContainer(url=path).url
+        if isinstance(url, pathlib.Path):
+            print(f"Start playing {url.resolve()} via publishing bytes")
+            with open(url, mode="r+b") as f:
                 plugin.publish(f.read(), exchange=queue.value)
         else:
-            plugin.publish(path, exchange=queue.value)
+            print(f"Start playing {url} via url")
+            plugin.publish(url, exchange=queue.value)
         return
-    plugin.play(path)
+    plugin.play(url)
 
 
 if __name__ == "__main__":

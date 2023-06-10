@@ -19,6 +19,9 @@ queues:
     - name: aurora.play
       exchange: play
       callback: _play
+    - name: aurora.execute
+      exchange: execute
+      callback: _execute
 
 player_command: mplayer {}
 source: player

@@ -1,7 +1,10 @@
+import atexit
 import pathlib
 import logging
-from subprocess import call
+import subprocess
+from contextlib import suppress
 from functools import singledispatchmethod
+from typing import Dict, Literal, Any
 
 import pydantic
 
@@ -13,12 +16,19 @@ class Plugin(Queues):
 
     NAME = "aurora_app_player"
 
+    processes: Dict[int, Any] = {}
+
     def __init__(self, config: Config):
         self.config = config
         super().__init__()
 
     def play(self, filename: str):
-        call(self.config.player_command.format(filename).split(" "))
+        command = self.config.player_command.format(filename)
+        # pylint: disable=consider-using-with
+        process = subprocess.Popen(command.split(" "), start_new_session=True, text=True)
+        self.processes[process.pid] = process
+        atexit.register(self.terminate, process.pid)
+        logging.info("Process %d [%s] has been started", process.pid, command)
 
     @singledispatchmethod
     def _play(self, body, message):
@@ -38,3 +48,25 @@ class Plugin(Queues):
         logging.info("Playing url from %s", body)
         self.play(body)
         message.ack()
+
+    def _execute(self, body, message):
+
+        class Execute(pydantic.BaseModel):
+            name: Literal["play"]
+            action: Literal["stop"]
+            value: int = None
+
+        with suppress(pydantic.ValidationError):
+            execute = Execute.parse_obj(body)
+            logging.info("Got command %s for execute", execute)
+            for pid in [k for k in self.processes if k == execute.value or not execute.value]:
+                self.terminate(pid)
+
+        message.ack()
+
+    def terminate(self, pid):
+        self.processes[pid].terminate()
+        logging.debug(
+            "Process %d has been terminated with status %d", pid, self.processes[pid].wait()
+        )
+        del self.processes[pid]

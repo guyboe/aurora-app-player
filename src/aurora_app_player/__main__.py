@@ -2,6 +2,7 @@ import os
 import enum
 import pathlib
 from typing import Optional, Union
+from typing_extensions import Annotated
 
 import typer
 import pydantic
@@ -67,7 +68,10 @@ class UrlContainer(pydantic.BaseModel):
 
 @cli.command("play")
 def _play(
-    path: str, queue: config.Queues.Exchange.Name = typer.Option(None, help="play via queue")
+    path: Annotated[str, typer.Argument(help="Path or url to file for play")],
+    queue: config.Queues.Exchange.Name = typer.Option(
+        None, help="Play via queue. Be sure the app consuming the queue are running"
+    )
 ):
     plugin = Plugin(config)
     if queue:

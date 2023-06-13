@@ -24,6 +24,7 @@ class Config(pydantic_config.Settings):
 
             class Name(pydantic_config.StrEnum):
 
+                RENDER = enum.auto()
                 SAY = enum.auto()
                 PLAY = enum.auto()
                 EXECUTE = enum.auto()
@@ -52,6 +53,6 @@ class Config(pydantic_config.Settings):
         queues: List[Queue] = pydantic.Field(default_factory=list)
 
     queues: Queues = pydantic.Field(default_factory=Queues)
-    storage: pydantic.DirectoryPath = "/tmp/aurora-plugin-player"
+    storage: pydantic.DirectoryPath
     player_command: str
     source: str
